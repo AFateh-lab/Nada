@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAM Concept Share — Package Builder</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --ink:#1b1f27; --muted:#5f6673; --line:#d9dde3; --accent:#0b5fff; --danger:#c62828; --ok:#1b7f3b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--ink); background:var(--bg); }
+  main { max-width:860px; margin:0 auto; padding:32px 20px 64px; }
+  h1 { font-size:24px; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 24px; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:16px; }
+  section h2 { font-size:16px; margin:0 0 12px; }
+  label { display:block; font-weight:600; margin:12px 0 4px; }
+  label small { font-weight:400; color:var(--muted); }
+  input[type=text], input[type=password], input[type=date], textarea {
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:6px; font:inherit; background:#fff; }
+  textarea { min-height:70px; resize:vertical; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:600px) { .row { grid-template-columns:1fr; } }
+  .drop { border:2px dashed var(--line); border-radius:8px; padding:26px; text-align:center; color:var(--muted); cursor:pointer; }
+  .drop.over { border-color:var(--accent); color:var(--accent); background:#eef3ff; }
+  table { width:100%; border-collapse:collapse; margin-top:12px; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); font-size:14px; }
+  th { color:var(--muted); font-weight:600; }
+  td.num { text-align:right; white-space:nowrap; }
+  .btn { display:inline-block; padding:10px 18px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer; }
+  .btn[disabled] { opacity:.5; cursor:not-allowed; }
+  .btn.ghost { background:#fff; color:var(--accent); }
+  .btn.small { padding:4px 10px; font-size:13px; font-weight:500; }
+  .status { margin-top:12px; min-height:22px; }
+  .status.err { color:var(--danger); }
+  .status.ok { color:var(--ok); }
+  .strength { height:6px; border-radius:3px; background:var(--line); margin-top:6px; overflow:hidden; }
+  .strength i { display:block; height:100%; width:0; background:var(--danger); transition:width .2s; }
+  .note { font-size:13px; color:var(--muted); }
+  ul.note { padding-left:18px; margin:8px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>RAM Concept Share — Package Builder</h1>
+  <p class="sub">Build a single password-protected HTML file containing the plans, reports and drawings you want to share. The recipient opens it in any browser. Your .cpt model never leaves your machine unless you choose to include it.</p>
+
+  <section>
+    <h2>1. Package details</h2>
+    <label for="title">Title</label>
+    <input id="title" type="text" placeholder="e.g. Level 3 PT slab — issue for review">
+    <label for="noteText">Message to recipient <small>(optional)</small></label>
+    <textarea id="noteText" placeholder="Shown after unlocking. e.g. Issued for review only. Do not use for construction."></textarea>
+    <div class="row">
+      <div>
+        <label for="watermark">Watermark text <small>(optional)</small></label>
+        <input id="watermark" type="text" placeholder="e.g. REVIEW COPY — ACME Consultants">
+      </div>
+      <div>
+        <label for="expires">Access expires on <small>(optional)</small></label>
+        <input id="expires" type="date">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Files</h2>
+    <div class="drop" id="drop">Drop files here or click to choose.<br><span class="note">Export plans and reports from RAM Concept to PDF or PNG first (File → Print → PDF). DXF/DWG exports work too.</span></div>
+    <input id="fileInput" type="file" multiple hidden>
+    <table id="fileTable" hidden>
+      <thead><tr><th>File</th><th>Type</th><th class="num">Size</th><th>Recipient may download</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="note">"View only" files are shown inside the viewer but have no download button. The recipient can still take screenshots; nothing can prevent that. Untick download for anything you want to keep as read-only, and only tick it for files you are happy to hand over (for example a DXF background).</p>
+  </section>
+
+  <section>
+    <h2>3. Password</h2>
+    <div class="row">
+      <div>
+        <label for="pw">Password</label>
+        <input id="pw" type="password" autocomplete="new-password">
+        <div class="strength"><i id="strengthBar"></i></div>
+      </div>
+      <div>
+        <label for="pw2">Confirm password</label>
+        <input id="pw2" type="password" autocomplete="new-password">
+      </div>
+    </div>
+    <p class="note">Use a long passphrase (four or more random words). Send it by a different channel than the file, for example by phone or text message. The password is never stored in the package; there is no recovery if it is lost.</p>
+  </section>
+
+  <section>
+    <h2>4. Build</h2>
+    <button class="btn" id="build" disabled>Build encrypted package</button>
+    <div class="status" id="status"></div>
+    <ul class="note">
+      <li>Encryption: AES-256-GCM, key derived from the password with PBKDF2-SHA256 (600,000 iterations). Everything runs in this browser tab. Nothing is uploaded anywhere.</li>
+      <li>The expiry date is checked by the viewer only. It deters casual use after the date but is not a security control.</li>
+    </ul>
+  </section>
+</main>
+
+<script type="text/template" id="viewerTemplate">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --ink:#1b1f27; --muted:#5f6673; --line:#d9dde3; --accent:#0b5fff; --danger:#c62828; }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--ink); background:var(--bg); }
+  #gate { min-height:100%; display:flex; align-items:center; justify-content:center; padding:20px; }
+  #gate form { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:28px; width:100%; max-width:420px; }
+  #gate h1 { font-size:20px; margin:0 0 4px; }
+  #gate p { color:var(--muted); margin:0 0 16px; }
+  input[type=password] { width:100%; padding:10px; border:1px solid var(--line); border-radius:6px; font:inherit; }
+  .btn { display:inline-block; margin-top:12px; padding:10px 18px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; }
+  .btn.small { padding:5px 12px; font-size:13px; margin:0; }
+  .err { color:var(--danger); margin-top:10px; min-height:22px; }
+  #app { display:none; height:100%; grid-template-columns:280px 1fr; }
+  #app.on { display:grid; }
+  aside { background:var(--card); border-right:1px solid var(--line); padding:18px; overflow:auto; }
+  aside h1 { font-size:17px; margin:0 0 6px; }
+  aside .note { font-size:13px; color:var(--muted); white-space:pre-wrap; margin-bottom:14px; }
+  aside ul { list-style:none; padding:0; margin:0; }
+  aside li { padding:8px 10px; border-radius:6px; cursor:pointer; font-size:14px; word-break:break-all; }
+  aside li.active { background:#eef3ff; color:var(--accent); font-weight:600; }
+  aside li span { display:block; font-size:12px; color:var(--muted); font-weight:400; }
+  #stage { position:relative; overflow:auto; padding:18px; }
+  #toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; }
+  #toolbar b { word-break:break-all; }
+  .pages canvas { display:block; margin:0 auto 14px; max-width:100%; box-shadow:0 1px 4px rgba(0,0,0,.15); background:#fff; }
+  iframe.pdf { width:100%; height:calc(100vh - 90px); border:1px solid var(--line); background:#fff; }
+  img.preview { max-width:100%; display:block; margin:0 auto; box-shadow:0 1px 4px rgba(0,0,0,.15); background:#fff; }
+  pre.text { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:14px; overflow:auto; font-size:13px; }
+  .noprev { color:var(--muted); padding:40px; text-align:center; }
+  #wm { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:5; display:none; }
+  #wm div { position:absolute; left:-20%; top:-20%; width:140%; height:140%; transform:rotate(-30deg); display:flex; flex-wrap:wrap; align-content:flex-start; gap:60px 80px; }
+  #wm span { font-size:22px; font-weight:700; color:rgba(30,40,60,.10); white-space:nowrap; user-select:none; }
+  @media (max-width:760px) { #app.on { grid-template-columns:1fr; grid-template-rows:auto 1fr; } aside { border-right:0; border-bottom:1px solid var(--line); } }
+  @media print { body { display:none; } }
+</style>
+</head>
+<body>
+<div id="gate">
+  <form id="gateForm">
+    <h1>__TITLE__</h1>
+    <p>This package is encrypted. Enter the password you were given to view it.</p>
+    <input id="pw" type="password" autocomplete="off" autofocus placeholder="Password">
+    <button class="btn" type="submit" id="unlockBtn">Unlock</button>
+    <div class="err" id="err"></div>
+  </form>
+</div>
+<div id="app">
+  <aside>
+    <h1 id="appTitle"></h1>
+    <div class="note" id="appNote"></div>
+    <ul id="fileList"></ul>
+  </aside>
+  <div id="stage">
+    <div id="toolbar"><b id="curName"></b><span id="curActions"></span></div>
+    <div id="view"></div>
+  </div>
+</div>
+<div id="wm"><div id="wmInner"></div></div>
+<script>
+var PKG = __PKG__;
+var manifest = null, urls = [];
+
+function b64ToBytes(s){ var bin = atob(s), out = new Uint8Array(bin.length); for (var i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i); return out; }
+
+async function unlock(password){
+  var enc = new TextEncoder();
+  var keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  var key = await crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt:b64ToBytes(PKG.salt), iterations:PKG.iterations, hash:'SHA-256' },
+    keyMaterial, { name:'AES-GCM', length:256 }, false, ['decrypt']);
+  var plain = await crypto.subtle.decrypt({ name:'AES-GCM', iv:b64ToBytes(PKG.iv) }, key, b64ToBytes(PKG.data));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+document.getElementById('gateForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  var err = document.getElementById('err'), btn = document.getElementById('unlockBtn');
+  err.textContent = ''; btn.disabled = true; btn.textContent = 'Unlocking…';
+  if (!window.crypto || !crypto.subtle) { err.textContent = 'This browser cannot decrypt the package. Open the file directly from disk in a current version of Chrome, Edge, Firefox or Safari.'; btn.disabled = false; btn.textContent = 'Unlock'; return; }
+  try {
+    manifest = await unlock(document.getElementById('pw').value);
+  } catch (ex) {
+    err.textContent = 'Wrong password.'; btn.disabled = false; btn.textContent = 'Unlock'; return;
+  }
+  if (manifest.expires && new Date() > new Date(manifest.expires + 'T23:59:59')) {
+    err.textContent = 'Access to this package expired on ' + manifest.expires + '. Contact the sender for a new copy.'; btn.textContent = 'Expired'; return;
+  }
+  start();
+});
+
+function start(){
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').classList.add('on');
+  document.getElementById('appTitle').textContent = manifest.title;
+  document.getElementById('appNote').textContent = manifest.note || '';
+  if (manifest.watermark) {
+    var inner = document.getElementById('wmInner');
+    for (var i=0;i<120;i++){ var s=document.createElement('span'); s.textContent=manifest.watermark; inner.appendChild(s); }
+    document.getElementById('wm').style.display = 'block';
+  }
+  var list = document.getElementById('fileList');
+  manifest.files.forEach(function(f, i){
+    var li = document.createElement('li');
+    li.textContent = f.name;
+    var s = document.createElement('span'); s.textContent = fmtSize(f.size) + (f.download ? ' · downloadable' : ' · view only');
+    li.appendChild(s);
+    li.addEventListener('click', function(){ show(i); });
+    list.appendChild(li);
+  });
+  if (manifest.files.length) show(0);
+}
+
+function fmtSize(n){ return n < 1048576 ? (n/1024).toFixed(0)+' KB' : (n/1048576).toFixed(1)+' MB'; }
+
+function show(i){
+  var f = manifest.files[i];
+  var items = document.querySelectorAll('#fileList li');
+  items.forEach(function(li, j){ li.classList.toggle('active', j===i); });
+  document.getElementById('curName').textContent = f.name;
+  var actions = document.getElementById('curActions'); actions.innerHTML = '';
+  var view = document.getElementById('view'); view.innerHTML = '';
+  urls.forEach(function(u){ URL.revokeObjectURL(u); }); urls = [];
+  var bytes = b64ToBytes(f.data);
+  var blob = new Blob([bytes], { type: f.type || 'application/octet-stream' });
+  var url = URL.createObjectURL(blob); urls.push(url);
+  if (f.download) {
+    var a = document.createElement('a'); a.className='btn small'; a.href=url; a.download=f.name; a.textContent='Download'; actions.appendChild(a);
+  }
+  var lower = f.name.toLowerCase();
+  if (f.type === 'application/pdf' || lower.endsWith('.pdf')) return renderPdf(bytes, url, view);
+  if ((f.type||'').indexOf('image/') === 0) { var img=document.createElement('img'); img.className='preview'; img.src=url; view.appendChild(img); return; }
+  if ((f.type||'').indexOf('text/') === 0 || /\.(txt|csv|log|md)$/.test(lower)) { var pre=document.createElement('pre'); pre.className='text'; pre.textContent=new TextDecoder().decode(bytes); view.appendChild(pre); return; }
+  var p = document.createElement('div'); p.className='noprev';
+  p.textContent = f.download ? 'No preview for this file type. Use the Download button.' : 'No preview for this file type. The sender has not enabled download for it.';
+  view.appendChild(p);
+}
+
+function renderPdf(bytes, url, view){
+  if (window.pdfjsLib) {
+    var wrap = document.createElement('div'); wrap.className='pages'; view.appendChild(wrap);
+    pdfjsLib.getDocument({ data: bytes }).promise.then(function(pdf){
+      var chain = Promise.resolve();
+      for (var p=1; p<=pdf.numPages; p++) (function(p){
+        chain = chain.then(function(){ return pdf.getPage(p); }).then(function(page){
+          var scale = Math.min(1.6, (view.clientWidth - 40) / page.getViewport({scale:1}).width);
+          var vp = page.getViewport({ scale: scale * (window.devicePixelRatio||1) });
+          var c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+          c.style.width = (vp.width/(window.devicePixelRatio||1)) + 'px';
+          wrap.appendChild(c);
+          return page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+        });
+      })(p);
+    }).catch(function(){ pdfFallback(url, view); });
+  } else pdfFallback(url, view);
+}
+function pdfFallback(url, view){
+  view.innerHTML = '';
+  var fr = document.createElement('iframe'); fr.className='pdf'; fr.src = url + '#toolbar=0&navpanes=0'; view.appendChild(fr);
+}
+</SCRIPT_END>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></SCRIPT_END>
+<script>if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</SCRIPT_END>
+</body>
+</html>
+</script>
+
+<script>
+(function(){
+  var files = [];
+  var drop = document.getElementById('drop'), input = document.getElementById('fileInput');
+  var table = document.getElementById('fileTable'), tbody = table.querySelector('tbody');
+  var pw = document.getElementById('pw'), pw2 = document.getElementById('pw2');
+  var build = document.getElementById('build'), status = document.getElementById('status');
+
+  drop.addEventListener('click', function(){ input.click(); });
+  drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', function(){ drop.classList.remove('over'); });
+  drop.addEventListener('drop', function(e){ e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); });
+  input.addEventListener('change', function(){ addFiles(input.files); input.value = ''; });
+
+  function addFiles(list){
+    Array.prototype.forEach.call(list, function(f){
+      if (files.some(function(x){ return x.file.name === f.name; })) return;
+      var lower = f.name.toLowerCase();
+      var isModel = /\.(cpt|cpt~|bak)$/.test(lower);
+      files.push({ file: f, download: false, isModel: isModel });
+    });
+    renderTable(); validate();
+  }
+
+  function fmtSize(n){ return n < 1048576 ? (n/1024).toFixed(0)+' KB' : (n/1048576).toFixed(1)+' MB'; }
+
+  function renderTable(){
+    tbody.innerHTML = '';
+    files.forEach(function(entry, i){
+      var tr = document.createElement('tr');
+      var tdName = document.createElement('td'); tdName.textContent = entry.file.name;
+      if (entry.isModel) { var w = document.createElement('div'); w.className='note'; w.style.color='var(--danger)'; w.textContent='This is a RAM Concept model. Anyone who downloads it gets the full editable file.'; tdName.appendChild(w); }
+      var tdType = document.createElement('td'); tdType.textContent = entry.file.type || 'unknown';
+      var tdSize = document.createElement('td'); tdSize.className='num'; tdSize.textContent = fmtSize(entry.file.size);
+      var tdDl = document.createElement('td'); var cb = document.createElement('input'); cb.type='checkbox'; cb.checked = entry.download; cb.setAttribute('data-download', i);
+      cb.addEventListener('change', function(){ entry.download = cb.checked; }); tdDl.appendChild(cb);
+      var tdRm = document.createElement('td'); var rm = document.createElement('button'); rm.type='button'; rm.className='btn ghost small'; rm.textContent='Remove';
+      rm.addEventListener('click', function(){ files.splice(i,1); renderTable(); validate(); }); tdRm.appendChild(rm);
+      tr.append(tdName, tdType, tdSize, tdDl, tdRm); tbody.appendChild(tr);
+    });
+    table.hidden = files.length === 0;
+  }
+
+  function strength(p){
+    var score = 0;
+    if (p.length >= 12) score++; if (p.length >= 20) score++;
+    if (/[a-z]/.test(p) && /[A-Z]/.test(p)) score++;
+    if (/\d/.test(p)) score++; if (/[^\w]/.test(p)) score++;
+    if (p.split(/\s+/).filter(Boolean).length >= 4) score += 2;
+    return Math.min(score, 5);
+  }
+  function validate(){
+    var s = strength(pw.value), bar = document.getElementById('strengthBar');
+    bar.style.width = (s * 20) + '%';
+    bar.style.background = s >= 4 ? 'var(--ok)' : s >= 2 ? '#e0a800' : 'var(--danger)';
+    var ok = files.length > 0 && pw.value.length >= 12 && pw.value === pw2.value;
+    build.disabled = !ok;
+    if (pw.value && pw.value.length < 12) setStatus('Password must be at least 12 characters.', 'err');
+    else if (pw2.value && pw.value !== pw2.value) setStatus('Passwords do not match.', 'err');
+    else setStatus('', '');
+  }
+  pw.addEventListener('input', validate); pw2.addEventListener('input', validate);
+
+  function setStatus(msg, cls){ status.textContent = msg; status.className = 'status ' + cls; }
+
+  function bytesToB64(bytes){
+    var s = '', chunk = 0x8000;
+    for (var i=0;i<bytes.length;i+=chunk) s += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+    return btoa(s);
+  }
+  function readFile(f){ return new Promise(function(res, rej){ var r = new FileReader(); r.onload=function(){ res(new Uint8Array(r.result)); }; r.onerror=rej; r.readAsArrayBuffer(f); }); }
+
+  build.addEventListener('click', async function(){
+    build.disabled = true; setStatus('Reading files…', '');
+    try {
+      var title = document.getElementById('title').value.trim() || 'Shared package';
+      var manifest = {
+        title: title,
+        note: document.getElementById('noteText').value,
+        watermark: document.getElementById('watermark').value.trim(),
+        expires: document.getElementById('expires').value || null,
+        created: new Date().toISOString(),
+        files: []
+      };
+      for (var i=0;i<files.length;i++){
+        var f = files[i];
+        manifest.files.push({ name:f.file.name, type:f.file.type, size:f.file.size, download:f.download, data: bytesToB64(await readFile(f.file)) });
+      }
+      setStatus('Encrypting…', '');
+      var iterations = 600000;
+      var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+      var enc = new TextEncoder();
+      var keyMaterial = await crypto.subtle.importKey('raw', enc.encode(pw.value), 'PBKDF2', false, ['deriveKey']);
+      var key = await crypto.subtle.deriveKey({ name:'PBKDF2', salt:salt, iterations:iterations, hash:'SHA-256' }, keyMaterial, { name:'AES-GCM', length:256 }, false, ['encrypt']);
+      var cipher = new Uint8Array(await crypto.subtle.encrypt({ name:'AES-GCM', iv:iv }, key, enc.encode(JSON.stringify(manifest))));
+      var pkg = { v:1, kdf:'PBKDF2-SHA256', iterations:iterations, salt:bytesToB64(salt), iv:bytesToB64(iv), cipher:'AES-256-GCM', data:bytesToB64(cipher) };
+
+      var tpl = document.getElementById('viewerTemplate').textContent.replace(/<\/SCRIPT_END>/g, '</scr' + 'ipt>');
+      var safeTitle = title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var pkgJson = JSON.stringify(pkg).replace(/</g, '\\u003c');
+      var html = tpl.replace(/__TITLE__/g, function(){ return safeTitle; }).replace('__PKG__', function(){ return pkgJson; });
+      var blob = new Blob([html], { type:'text/html' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = title.replace(/[^\w\-]+/g, '_').replace(/^_+|_+$/g, '') + '.html';
+      document.body.appendChild(a); a.click(); a.remove();
+      setStatus('Package built: ' + a.download + ' (' + fmtSize(blob.size) + '). Send the file and the password by separate channels.', 'ok');
+    } catch (ex) {
+      setStatus('Failed: ' + (ex && ex.message || ex), 'err');
+    }
+    build.disabled = false;
+  });
+})();
+</script>
+</body>
+</html>
