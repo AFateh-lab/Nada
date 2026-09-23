@@ -130,3 +130,27 @@ def test_wall_from_open_polyline_and_arcs(tmp_path):
 def test_config_rejects_unknown_keys():
     with pytest.raises(KeyError):
         Config.from_dict({"slab": {"thicknes": 0.3}})
+
+
+def test_cli_dry_run_writes_dashboard(sample, tmp_path):
+    from ram_mesh_import.cli import main
+    work = tmp_path / "work"
+    rc = main([str(sample), "--dry-run", "--work-dir", str(work)])
+    assert rc == 0
+    html = (work / "sample_dashboard.html").read_text(encoding="utf-8")
+    assert "<svg" in html and "OK with" in html and (work / "sample_geometry.json").exists()
+
+
+def test_cli_batch_mode_reports_failure_and_index(sample, tmp_path):
+    from ram_mesh_import.cli import main
+    folder = tmp_path / "dxfs"
+    folder.mkdir()
+    (folder / "A.dxf").write_bytes(sample.read_bytes())
+    doc = ezdxf.new("R2018")
+    doc.modelspace().add_lwpolyline([(0, 0), (5000, 0), (5000, 5000)], close=False,
+                                    dxfattribs={"layer": "BBR-Slabs"})   # open -> error
+    doc.saveas(folder / "B.dxf")
+    rc = main([str(folder), "--batch", "--dry-run"])
+    assert rc == 1
+    index = (folder / "concept" / "work" / "index.html").read_text(encoding="utf-8")
+    assert "A.dxf" in index and "B.dxf" in index and "errors" in index

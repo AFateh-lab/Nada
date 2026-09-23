@@ -54,23 +54,52 @@ set PYTHONPATH=C:\Program Files\Bentley\Engineering\RAM Concept CONNECT Edition\
 
 The `--dry-run` mode needs only `ezdxf` and `shapely` and works anywhere.
 
-## Use
+## Quick start on Windows (batch files)
+
+| File          | What it does                                                                 |
+|---------------|------------------------------------------------------------------------------|
+| `setup.bat`   | Run once. Installs the Python packages, copies `config.json`, runs the tests. |
+| `dry_run.bat` | Drag a DXF **or a folder of DXFs** onto it. Checks the drawing(s) and opens the dashboard. RAM Concept is not started. |
+| `build.bat`   | Drag a DXF or a folder onto it. Validates, builds the `.cpt` model(s), generates the mesh, opens the dashboard. Edit `CONCEPT_PY` inside it once to point at your RAM Concept install. |
+
+Both drag-and-drop files read `config.json` from the same folder when it
+exists.
+
+## Dashboard
+
+Every run writes `<drawing>_dashboard.html` next to the output (in the
+`*_work` folder). It shows:
+
+- a plan view of everything extracted: slab, drop panels, openings, columns
+  (with size and rotation), walls and beams, hover any object for its CAD
+  handle;
+- object counts and whether the model was built;
+- every validation error and warning, each naming the CAD handle and layer
+  of the object so it can be found in AutoCAD.
+
+Batch mode also writes `index.html`, one row per drawing with its status,
+linking to each drawing's dashboard.
+
+## Command line
 
 ```
 # 1. check the drawing without touching RAM Concept
-python -m ram_mesh_import LEVEL03.dxf --config config.json --dry-run
+python -m ram_mesh_import LEVEL03.dxf --config config.json --dry-run --open
 
 # 2. build the model
 python -m ram_mesh_import LEVEL03.dxf --config config.json --out LEVEL03.cpt
+
+# 3. every DXF in a folder -> <folder>\concept\*.cpt plus index.html
+python -m ram_mesh_import C:\jobs\dxf --batch --config config.json
 
 # what layers are in this file?
 python -m ram_mesh_import LEVEL03.dxf --list-layers
 ```
 
 Outputs land in `<out>_work/`: the flattened DXF, `*_geometry.json` (what
-will be created, in model units) and `*_report.txt` (validation result).
-The exit code is 1 when validation fails, so the command can sit in a batch
-file or a scheduled job.
+will be created, in model units), `*_report.txt` and `*_dashboard.html`.
+The exit code is 1 when validation fails, so the command can sit in a
+scheduled job.
 
 Copy `examples/config.example.json` per project and edit slab thickness,
 concrete names, column size defaults, mesh size and the tool paths.
