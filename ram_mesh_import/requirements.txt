@@ -1,0 +1,5 @@
+ezdxf>=1.1
+shapely>=2.0
+# ram_concept is NOT on PyPI. It is installed with RAM Concept CONNECT Edition;
+# add its folder to PYTHONPATH, e.g.
+#   C:\Program Files\Bentley\Engineering\RAM Concept CONNECT Edition\RAM Concept\python

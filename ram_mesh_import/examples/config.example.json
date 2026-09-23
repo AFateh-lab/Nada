@@ -1,0 +1,32 @@
+{
+  "cad_to_model_scale": 0.001,
+  "units": "SI",
+  "tolerance": 0.005,
+  "explode_blocks": true,
+
+  "layers": {
+    "slab":            ["BBR-Slabs"],
+    "opening":         ["BBR-Opening"],
+    "drop_panel":      ["BBR-Drop Panels"],
+    "column":          ["BBR-Columns"],
+    "wall":            ["BBR-Walls"],
+    "wall_centreline": ["BBR-Walls-CL"],
+    "beam":            ["BBR-Beams"]
+  },
+
+  "slab":       { "thickness": 0.250, "concrete": "C40", "toc": 0.0, "priority": 1 },
+  "opening":    { "priority": 2 },
+  "drop_panel": { "thickness": 0.400, "concrete": "C40", "priority": 2 },
+  "column":     { "b": 0.400, "d": 0.400, "height": 3.0, "concrete": "C40",
+                  "below_slab": true, "above_slab": false,
+                  "fixed_near": true, "fixed_far": true, "size_from_outline": true },
+  "wall":       { "thickness": 0.200, "height": 3.0, "concrete": "C40",
+                  "below_slab": true, "above_slab": false, "min_aspect_ratio": 2.0 },
+  "beam":       { "width": 0.400, "thickness": 0.600, "concrete": "C40", "priority": 3 },
+  "mesh":       { "element_size": 0.300, "generate": true },
+
+  "tools": {
+    "accoreconsole": "",
+    "oda_file_converter": ""
+  }
+}
