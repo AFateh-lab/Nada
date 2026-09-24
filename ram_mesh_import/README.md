@@ -54,7 +54,21 @@ set PYTHONPATH=C:\Program Files\Bentley\Engineering\RAM Concept CONNECT Edition\
 
 The `--dry-run` mode needs only `ezdxf` and `shapely` and works anywhere.
 
-## Quick start on Windows (batch files)
+## Download (no Python needed)
+
+Every push builds a standalone Windows package on GitHub Actions and
+publishes it under **Releases**:
+
+https://github.com/AFateh-lab/Nada/releases/latest
+
+Download `ram_mesh_import_windows.zip`, unzip it, and read
+`README_FIRST.txt`. It contains `ram_mesh_import.exe`, `dry_run.bat`,
+`build.bat`, `test_sample.bat`, `config.json` and the sample DXF.
+The exe bundles Python, ezdxf and shapely. The RAM Concept API is not
+bundled: set `CONCEPT_PY` in `build.bat` (or `tools.concept_python` in
+`config.json`) to the `python` folder of your RAM Concept installation.
+
+## Quick start on Windows from source (batch files)
 
 | File          | What it does                                                                 |
 |---------------|------------------------------------------------------------------------------|

@@ -10,7 +10,7 @@ if "%~1"=="" (echo Drag a DXF file or a folder onto this .bat file. & pause & ex
 rem --- Path to the Python API folder inside your RAM Concept install ---
 set "CONCEPT_PY=C:\Program Files\Bentley\Engineering\RAM Concept CONNECT Edition\RAM Concept\python"
 if not exist "%CONCEPT_PY%" (echo RAM Concept API folder not found: & echo   %CONCEPT_PY% & echo Edit CONCEPT_PY in build.bat to match your installation. & pause & exit /b 1)
-set "PYTHONPATH=%CONCEPT_PY%;%PYTHONPATH%"
+set "PYTHONPATH=%CONCEPT_PY%;%PYTHONPATH%"
 
 set CFG=
 if exist config.json set CFG=--config config.json
