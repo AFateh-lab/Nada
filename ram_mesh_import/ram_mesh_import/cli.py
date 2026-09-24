@@ -37,6 +37,14 @@ def _open(path: Path) -> None:
         log.warning("could not open %s: %s", path, exc)
 
 
+def add_concept_api_path(cfg: Config) -> None:
+    """Make the ram_concept package importable (needed for the frozen .exe,
+    which ignores PYTHONPATH)."""
+    folder = os.environ.get("CONCEPT_PY") or cfg.tools.concept_python
+    if folder and folder not in sys.path:
+        sys.path.insert(0, folder)
+
+
 def process_one(drawing: Path, cfg: Config, out: Path, work: Path, *, dry_run: bool,
                 skip_prep: bool, strict: bool, show_ui: bool) -> dict:
     """Run the pipeline for one drawing. Returns a summary dict for the batch index."""
@@ -58,6 +66,7 @@ def process_one(drawing: Path, cfg: Config, out: Path, work: Path, *, dry_run: b
     elif dry_run:
         log.info("dry run complete; RAM Concept not started")
     else:
+        add_concept_api_path(cfg)
         from .concept_builder import build_model
         build_model(st, cfg, str(out), headless=not show_ui)
         built = True

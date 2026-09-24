@@ -106,6 +106,9 @@ class ToolPaths:
     accoreconsole: str = ""
     # ODA File Converter, used when the input is a DWG and AutoCAD is absent.
     oda_file_converter: str = ""
+    # Folder holding the RAM Concept Python API (the "python" folder inside the
+    # RAM Concept installation). Also settable with the CONCEPT_PY env var.
+    concept_python: str = ""
 
 
 @dataclass

@@ -3,3 +3,8 @@ __pycache__/
 .pytest_cache/
 *_work/
 *.cpt
+build/
+dist/
+pkg/
+smoke/
+*.spec
