@@ -36,6 +36,11 @@ jobs:
           pyinstaller --onefile --console --name ram_mesh_import
           --collect-all ezdxf --collect-all shapely
           --hidden-import ram_mesh_import.concept_builder
+          --exclude-module matplotlib --exclude-module PIL --exclude-module tkinter
+          --exclude-module PyQt5 --exclude-module PySide6 --exclude-module scipy
+          --exclude-module pandas --exclude-module IPython --exclude-module pytest
+          --exclude-module ezdxf.addons.drawing --exclude-module ezdxf.addons.browser
+          --exclude-module setuptools --exclude-module pkg_resources
           entry.py
 
       - name: Smoke test exe
