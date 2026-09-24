@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*_work/
+*.cpt
+build/
+dist/
+pkg/
+smoke/
+*.spec
